@@ -27,24 +27,34 @@ using namespace std;
 
 static const char *vertexShaderSource =
   "attribute highp vec4 posAttr;\n"
+  "attribute vec4 normals;\n"
+  "varying vec3 col_normals;\n"
   "uniform lowp vec4 colAttr;\n"
   "varying lowp vec4 col;\n"
   "uniform highp mat4 matrix;\n"
   "void main() {\n"
-  "vec4 tmp = vec4(0.15,0.1,0.3,1);"
-  "tmp[1] = posAttr[2]*25.5;"
-  "if(tmp[1] < 0.0)"
-  "  tmp[1] = 0.0;"
-  "if(tmp[1] > 1.0)"
-  "  tmp[1] = 1.0;"
-  " col = tmp;\n"
+  /*
+    "tmp[1] = posAttr[2]*25.5;"
+    "if(tmp[1] < 0.0)"
+    "  tmp[1] = 0.0;"
+    "if(tmp[1] > 1.0)"
+    "  tmp[1] = 1.0;"
+    " col = tmp;\n"
+  */
+  
+  " col_normals = normals.xyz;\n"
   " gl_Position = matrix * posAttr;\n"
   "}\n";
 
 static const char *fragmentShaderSource =
+  "varying vec3 col_normals;\n"
   "varying lowp vec4 col;\n"
   "void main() {\n"
-  "gl_FragColor = vec4(1.0);\n"
+  "vec3 couleur = vec3(1.0,1.0,1.0);\n"
+  "vec3 direction = vec3(-0.5,-0.5,-0.5);\n"
+  "vec4 tmp = vec4(0.15,0.1,0.3,1);\n"
+  "float intens = max(0.0, dot(normalize(col_normals), -direction));\n"
+  "gl_FragColor = tmp*vec4(couleur * (intens + 0.2), 1.0);\n"
   "}\n";
 
 
@@ -116,6 +126,7 @@ void GameWindow::initialize()
 {
   const qreal retinaScale = devicePixelRatio();
 
+  calc_normals();
 
   glViewport(0, 0, width() * retinaScale, height() * retinaScale);
 
@@ -130,6 +141,7 @@ void GameWindow::initialize()
   m_program->link();
   m_posAttr = m_program->attributeLocation("posAttr");
   m_colAttr = m_program->uniformLocation("colAttr");
+  m_normals = m_program->attributeLocation("normals");
   m_matrixUniform = m_program->uniformLocation("matrix");
   
   
@@ -172,6 +184,7 @@ void GameWindow::loadMap(QString localPath)
   }
   unsigned int seed = 237, height = 257, width = 257;
   PerlinNoise pn(seed);
+  
 
   
   uint id = 0;
@@ -417,6 +430,7 @@ void GameWindow::displayPoints()
   QColor cl(20,10,10,55);
   m_program->setUniformValue(m_colAttr,cl);
 
+  
 
   GLfloat vertices[m_image.width()*m_image.height()*3];
   
@@ -438,7 +452,8 @@ void GameWindow::displayPoints()
        
   glVertexAttribPointer(m_posAttr, 3, GL_FLOAT, GL_FALSE, 0, vertices);
   //  glVertexAttribPointer(m_colAttr, 3, GL_FLOAT, GL_FALSE, 0, colors);
-       
+  glVertexAttribPointer(m_normals, 3, GL_FLOAT, GL_FALSE, 0, normals);
+     
   glEnableVertexAttribArray(0);
   //EnableVertexAttribArray(1);
   
@@ -453,7 +468,73 @@ void GameWindow::displayPoints()
  
 }
 
+void GameWindow::calc_normals()
+{
+  normals = new GLfloat[m_image.width()*m_image.height()*3];
+  for(int i = 0; i < m_image.width()*m_image.height()*3;i++)
+    normals[i] = 0;
 
+  uint p1 ,p2 ,p3 ,id, ip, tri[m_image.width()*2*(m_image.height() - 1)];
+  float x, y, z, a, b, c;
+
+  //cout << "done" << endl;
+
+  for(int i = 0; i < m_image.height()-1; i++)
+    for(int j = 0; j < m_image.width()*2; j++)
+      {
+	ip = (j%2 == 1?i+1:i);
+	id = ip*m_image.width() +j/2;
+	 
+	tri[(i*m_image.width()*2+j)] = id;
+      }
+  
+  uint truetri[(m_image.width()*2 - 2)*3*(m_image.height() - 1)];
+  
+  for(int i = 0; i < m_image.height()-1; i++)
+    for(int j = 0; j < m_image.width()*2; j++)
+      {
+	if(!j)
+	  {
+	    truetri[i*(m_image.width()*2 - 2)*3] = tri[i*m_image.width()*2];
+	    id = tri[i*m_image.width()*2 + 1];
+	    ip = tri[i*m_image.width()*2 + 2];
+
+	    truetri[3*(i*(m_image.width()*2 - 2)) + 1] = id;
+	    truetri[3*(i*(m_image.width()*2 - 2)) + 2] = ip;
+	  }
+	else
+	  {
+	    truetri[3*(i*(m_image.width()*2 - 2) + j)] = id;
+	    truetri[3*(i*(m_image.width()*2 - 2) + j) + 1] = ip;
+	    
+	    id = ip;
+	    ip = tri[i*m_image.width()*2 + j];
+	    
+	    truetri[3*(i*(m_image.width()*2 - 2) + j) + 2] = ip;
+	  }
+      }
+
+  for(int i = 0; i < m_image.height()-1; i++)
+    for(int j = 0; j < m_image.width()*2 - 2; j++)
+      {
+	p1 = truetri[3*(i*(m_image.width()*2 - 2) + j)];
+	p2 = truetri[3*(i*(m_image.width()*2 - 2) + j) + 1];
+	p3 = truetri[3*(i*(m_image.width()*2 - 2) + j) + 2];
+  
+	x = p[p2].x - p[p1].x;
+	y = p[p2].x - p[p1].y;
+	z = p[p2].x - p[p1].z;
+
+	a = p[p2].x - p[p1].x;
+	b = p[p2].x - p[p1].y;
+	c = p[p2].x - p[p1].z;
+	
+	normals[3*p1] += z*b - y*c;
+	normals[3*p1 + 1] += z*a - x*c;
+	normals[3*p1 + 2] += y*a - x*b;
+      }
+}
+	
 void GameWindow::displayTriangles()
 {
  
@@ -494,25 +575,25 @@ void GameWindow::displayTriangles()
       };
        
   glVertexAttribPointer(m_posAttr, 3, GL_FLOAT, GL_FALSE, 0, vertices);
-  //glVertexAttribPointer(m_colAttr, 3, GL_FLOAT, GL_FALSE, 0, colors);
+  glVertexAttribPointer(m_normals, 3, GL_FLOAT, GL_FALSE, 0, normals);
        
   glEnableVertexAttribArray(0);
-  //glEnableVertexAttribArray(1);
+  glEnableVertexAttribArray(1);
 
+  /*
   QOpenGLTexture *texture = new QOpenGLTexture(QImage("text.jpg").mirrored());
   texture->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
   texture->setMagnificationFilter(QOpenGLTexture::Linear);
-
+  */
 
   int cpt = 0;
-  texture->bind();
+  //  texture->bind();
   for(;cpt < m_image.height() - 1; cpt++)
     {
-      
-	glDrawArrays(GL_TRIANGLE_STRIP, cpt * m_image.width() * 2, m_image.width() * 2);
+      glDrawArrays(GL_TRIANGLE_STRIP, cpt * m_image.width() * 2, m_image.width() * 2);
     }
-
-  //glDisableVertexAttribArray(1);
+  
+  glDisableVertexAttribArray(1);
   glDisableVertexAttribArray(0);
     
   m_program->release();
@@ -644,6 +725,7 @@ void GameWindow::displayLines()
        
   glVertexAttribPointer(m_posAttr, 3, GL_FLOAT, GL_FALSE, 0, vertices);
   glVertexAttribPointer(m_colAttr, 3, GL_FLOAT, GL_FALSE, 0, colors);
+  glVertexAttribPointer(m_normals, 3, GL_FLOAT, GL_FALSE, 0, normals);
        
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
