@@ -1,6 +1,6 @@
 #ifndef GAMEWINDOW_H
 #define GAMEWINDOW_H
-
+#include <QtGui/QOpenGLShaderProgram>
 #include "openglwindow.h"
 
 struct point
@@ -16,7 +16,7 @@ public:
     float ss = 1.0f;
     float anim = 0.0f;
 
-    int etat = 0;
+    int etat = 2;
 };
 
 class GameWindow : public OpenGLWindow
@@ -47,6 +47,9 @@ public:
 
     void setSeason(int );
 
+    void calc_normals();
+
+    GLuint loadShader(GLenum type, const char *source);
 public slots:
     void updateSeason();
 
@@ -59,11 +62,20 @@ private:
 
     QImage m_image;
     point *p;
+    GLfloat* normals;
     int carte=1;
     int maj = 20;
 
     QTimer *timer;
     QTimer *timerFPS;
+    
+    GLuint m_posAttr;
+    GLuint m_colAttr;
+    GLuint m_matrixUniform;
+    GLuint m_normals;
+    
+    QOpenGLShaderProgram *m_program;
+    
 };
 
 

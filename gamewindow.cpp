@@ -27,7 +27,7 @@ using namespace std;
 
 static const char *vertexShaderSource =
   "attribute highp vec4 posAttr;\n"
-  "attribute vec4 normals;\n"
+  "attribute vec3 normals;\n"
   "varying vec3 col_normals;\n"
   "uniform lowp vec4 colAttr;\n"
   "varying lowp vec4 col;\n"
@@ -42,7 +42,7 @@ static const char *vertexShaderSource =
     " col = tmp;\n"
   */
   
-  " col_normals = normals.xyz;\n"
+  " col_normals = normals;\n"
   " gl_Position = matrix * posAttr;\n"
   "}\n";
 
@@ -50,11 +50,11 @@ static const char *fragmentShaderSource =
   "varying vec3 col_normals;\n"
   "varying lowp vec4 col;\n"
   "void main() {\n"
-  "vec3 couleur = vec3(1.0,1.0,1.0);\n"
-  "vec3 direction = vec3(-0.5,-0.5,-0.5);\n"
-  "vec4 tmp = vec4(0.15,0.1,0.3,1);\n"
+  "vec3 couleur = vec3(1.0,0.8,0.6);\n"
+  "vec3 direction = vec3(0.0,-1.0,0.0);\n"
+  "vec4 tmp = vec4(0.15,0.1,0.3,1.0);\n"
   "float intens = max(0.0, dot(normalize(col_normals), -direction));\n"
-  "gl_FragColor = tmp*vec4(couleur * (intens + 0.2), 1.0);\n"
+  "gl_FragColor = vec4(couleur * (intens + 0.2), 1.0);\n"
   "}\n";
 
 
@@ -318,7 +318,7 @@ void GameWindow::render()
       displayLines();
       break;
     default:
-      displayPoints();
+      displayTriangles();
       break;
     }
   if (season == 2)
@@ -455,13 +455,13 @@ void GameWindow::displayPoints()
   glVertexAttribPointer(m_normals, 3, GL_FLOAT, GL_FALSE, 0, normals);
      
   glEnableVertexAttribArray(0);
-  //EnableVertexAttribArray(1);
+  glEnableVertexAttribArray(1);
   
   
   
   glDrawArrays(GL_POINTS, 0, m_image.width()*m_image.height());
  
-  //DisableVertexAttribArray(1);
+  glDisableVertexAttribArray(1);
   glDisableVertexAttribArray(0);
     
   m_program->release();
@@ -470,12 +470,17 @@ void GameWindow::displayPoints()
 
 void GameWindow::calc_normals()
 {
-  normals = new GLfloat[m_image.width()*m_image.height()*3];
-  for(int i = 0; i < m_image.width()*m_image.height()*3;i++)
-    normals[i] = 0;
-
-  uint p1 ,p2 ,p3 ,id, ip, tri[m_image.width()*2*(m_image.height() - 1)];
-  float x, y, z, a, b, c;
+  //normals = new GLfloat[m_image.width()*m_image.height()*3];
+  normals = new GLfloat[m_image.width()*2*(m_image.height() - 1)*3];
+  for(int i = 0; i < m_image.width()*2*(m_image.height() - 1);i++)
+    {
+      normals[3*i] = 0;
+      normals[3*i + 1] = -1.0;
+      normals[3*i + 2] = 0;
+    }
+  /*
+    uint p1 ,p2 ,p3 ,id, ip, tri[m_image.width()*2*(m_image.height() - 1)];
+    float x, y, z, a, b, c;
 
   //cout << "done" << endl;
 
@@ -533,6 +538,7 @@ void GameWindow::calc_normals()
 	normals[3*p1 + 1] += z*a - x*c;
 	normals[3*p1 + 2] += y*a - x*b;
       }
+  */
 }
 	
 void GameWindow::displayTriangles()
@@ -573,12 +579,11 @@ void GameWindow::displayTriangles()
   GLfloat colors[] = {
         1.0f, 1.0f, 0.0f,
       };
-       
+  
+  glEnableVertexAttribArray(m_posAttr);
   glVertexAttribPointer(m_posAttr, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+  glEnableVertexAttribArray(m_normals);
   glVertexAttribPointer(m_normals, 3, GL_FLOAT, GL_FALSE, 0, normals);
-       
-  glEnableVertexAttribArray(0);
-  glEnableVertexAttribArray(1);
 
   /*
   QOpenGLTexture *texture = new QOpenGLTexture(QImage("text.jpg").mirrored());
@@ -593,7 +598,7 @@ void GameWindow::displayTriangles()
       glDrawArrays(GL_TRIANGLE_STRIP, cpt * m_image.width() * 2, m_image.width() * 2);
     }
   
-  glDisableVertexAttribArray(1);
+  //glDisableVertexAttribArray(1);
   glDisableVertexAttribArray(0);
     
   m_program->release();
@@ -724,7 +729,7 @@ void GameWindow::displayLines()
       };
        
   glVertexAttribPointer(m_posAttr, 3, GL_FLOAT, GL_FALSE, 0, vertices);
-  glVertexAttribPointer(m_colAttr, 3, GL_FLOAT, GL_FALSE, 0, colors);
+  //glVertexAttribPointer(m_colAttr, 3, GL_FLOAT, GL_FALSE, 0, colors);
   glVertexAttribPointer(m_normals, 3, GL_FLOAT, GL_FALSE, 0, normals);
        
   glEnableVertexAttribArray(0);
