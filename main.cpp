@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     QTimer* calendar = new QTimer;
 
     GameWindow* window[4];
-    for(int i = 0; i < 4; i++)
+    for(int i = 0; i < 1; i++)
     {
         if (i == 0)
             window[i] = new GameWindow();
