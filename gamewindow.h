@@ -2,6 +2,7 @@
 #define GAMEWINDOW_H
 #include <QtGui/QOpenGLShaderProgram>
 #include "openglwindow.h"
+#include <QOpenGLTexture>
 
 struct point
 {
@@ -48,6 +49,7 @@ public:
     void setSeason(int );
 
     void calc_normals();
+    void calc_tex();
 
     GLuint loadShader(GLenum type, const char *source);
 public slots:
@@ -63,8 +65,11 @@ private:
     QImage m_image;
     point *p;
     GLfloat* normals;
+    GLfloat* tex;
     int carte=1;
     int maj = 20;
+
+    QOpenGLTexture *texture;
 
     QTimer *timer;
     QTimer *timerFPS;
@@ -73,6 +78,7 @@ private:
     GLuint m_colAttr;
     GLuint m_matrixUniform;
     GLuint m_normals;
+    GLuint m_tex;
     
     QOpenGLShaderProgram *m_program;
     
