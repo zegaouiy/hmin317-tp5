@@ -13,9 +13,10 @@ class paramCamera
 {
 public:
     float rotX = -45.0;
-    float rotY = -45.0;
-    float ss = 1.0f;
+    float rotY = 0.0f;
+    float ss = 0.0f;
     float anim = 0.0f;
+    float zm = 1.0f;
 
     int etat = 2;
 };
