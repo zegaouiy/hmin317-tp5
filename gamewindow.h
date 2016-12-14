@@ -65,7 +65,7 @@ private:
     QImage m_image;
     point *p;
     GLfloat* normals;
-    GLfloat* tex;
+    GLfloat* tex_cord;
     int carte=1;
     int maj = 20;
 
