@@ -51,6 +51,7 @@ public:
 
     void calc_normals();
     void calc_tex();
+    void calc_humid();
 
     GLuint loadShader(GLenum type, const char *source);
 public slots:
@@ -67,6 +68,7 @@ private:
     point *p;
     GLfloat* normals;
     GLfloat* tex_cord;
+    GLfloat* humid;
     int carte=1;
     int maj = 20;
 
@@ -83,6 +85,7 @@ private:
     GLuint m_tex;
     GLuint m_grass;
     GLuint m_mtn;
+    GLuint m_humid;
     
     
     QOpenGLShaderProgram *m_program;
