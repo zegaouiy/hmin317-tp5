@@ -71,6 +71,7 @@ private:
     int maj = 20;
 
     QOpenGLTexture *texture;
+    QOpenGLTexture *mountain;
 
     QTimer *timer;
     QTimer *timerFPS;
@@ -80,6 +81,9 @@ private:
     GLuint m_matrixUniform;
     GLuint m_normals;
     GLuint m_tex;
+    GLuint m_grass;
+    GLuint m_mtn;
+    
     
     QOpenGLShaderProgram *m_program;
     
