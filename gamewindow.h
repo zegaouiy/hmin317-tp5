@@ -53,6 +53,10 @@ public:
     void calc_tex();
     void calc_humid();
 
+    void initMarker();
+    void displayExplosionMarker(int);
+    void explosionCrater(int, float, float, float, float, float);
+
     GLuint loadShader(GLenum type, const char *source);
 public slots:
     void updateSeason();
@@ -78,6 +82,15 @@ private:
     QTimer *timer;
     QTimer *timerFPS;
     
+    int idMarker;
+    int marker_x;
+    int marker_y;
+    GLfloat* marker;
+    GLfloat* mark_norm;
+    GLfloat mr_rotat = 0;
+    GLfloat mr_hover = 0;
+    GLfloat hover_s = 1.0;
+
     GLuint m_posAttr;
     GLuint m_colAttr;
     GLuint m_matrixUniform;

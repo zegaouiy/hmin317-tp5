@@ -205,11 +205,45 @@ void GameWindow::initialize()
       particules[i].z = (float)(alt)/100;
     }
   */
-  cout << " done " << m_image.height() << endl;
-  calc_normals();
+  //cout << " done " << m_image.height() << endl;
   
+  calc_normals();
   calc_tex();
   
+  initMarker();
+}
+
+void GameWindow::initMarker()
+{
+  marker_x = 0;
+  marker_y = 0;
+  
+  marker = new GLfloat[6*3*3];
+  GLfloat tmp_marker[18*3] = {0.0, 0.0, 0.0,
+			    -0.01, 0.01, 0.03,
+			    0.01, 0.01, 0.03,
+			    0.0, 0.0, 0.0,
+			    -0.01, 0.01, 0.03,
+			    -0.01, -0.01, 0.03,
+			    0.0, 0.0, 0.0,
+			    -0.01, -0.01, 0.03,
+			    0.01, -0.01, 0.03,
+			    0.0, 0.0, 0.0,
+			    0.01, -0.01, 0.03,
+			    0.01, 0.01, 0.03,
+			    0.01, 0.01, 0.03,
+			    -0.01, -0.01, 0.03,
+			    0.01, -0.01, 0.03,
+			    0.01, 0.01, 0.03,
+			    -0.01, -0.01, 0.03,
+			    -0.01, 0.01, 0.03};
+  
+  mark_norm = new GLfloat[6*3*3];
+  for(int i = 0; i < 18*3; i++)
+    {
+      mark_norm[i] = 1.0;
+      marker[i] = tmp_marker[i];
+    }
 }
 
 ///*
@@ -369,7 +403,14 @@ glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	c->anim +=0.05f;
     }
 
-
+  mr_rotat += 0.05f;
+  
+  if(mr_hover < 0.0)
+    hover_s = 1.0;
+  if(mr_hover > 0.03)
+    hover_s = -1.0;
+  
+  mr_hover += 0.002f * hover_s;
 
   switch(c->etat)
     {
@@ -389,7 +430,6 @@ glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       displayTrianglesTexture();
       break;
     case 5:
- 
       displayTrianglesTexture();
       displayLines();
       break;
@@ -403,6 +443,7 @@ glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   else if (season == 3)
     updateParticlesHiv();
   */
+  displayExplosionMarker(idMarker);
   m_frame++;
 
 }
@@ -453,35 +494,21 @@ void GameWindow::keyPressEvent(QKeyEvent *event)
     case 'D':
       c->rotY -= 0.10f;
       break;
-    case 'W':
-      c->etat ++;
-      if(c->etat > 5)
-	c->etat = 0;
-      break;
-    case 'P':
-      maj++;
-      timer->stop();
-      timer->start(maj);
-      break;
     case 'O':
-      maj--;
-      if(maj < 1)
-	maj = 1;
-      timer->stop();
-      timer->start(maj);
+      if(marker_y < m_image.height() - 1)
+	marker_y++;
       break;
-    case 'L':
-      maj = maj - 20;
-      if(maj < 1)
-	maj = 1;
-      timer->stop();
-      timer->start(maj);
+    case 'L' :
+      if(marker_y > 0)
+	marker_y--;
       break;
-    case 'M':
-      maj = maj + 20;
-
-      timer->stop();
-      timer->start(maj);
+    case 'M' :
+      if(marker_x < m_image.width() - 1)
+	marker_x++;
+      break;
+    case 'K' :
+      if(marker_x > 0)
+	marker_x--;
       break;
     case 'X':
       carte ++;
@@ -497,6 +524,106 @@ void GameWindow::keyPressEvent(QKeyEvent *event)
 
     }
 
+}
+
+
+void GameWindow::displayExplosionMarker(int id)
+{
+  idMarker = marker_y*m_image.width() + marker_x;
+  
+  m_program->bind();
+  QMatrix4x4 matrix;
+  matrix.ortho(-1.0, 1.0, -1.0, 1.0, -100.0, 100.0);
+  matrix.rotate(c->rotX,1.0f,0.0f,0.0f);
+  matrix.rotate(c->anim,0.0f,0.0f,1.0f);
+
+  //matrix.rotate(mr_rotat, 0.0f, 0.0f);
+  matrix.translate(0.0f, 0.0f, mr_hover);
+
+  matrix.translate((float)marker_x/(float)m_image.width() - 0.5, (float)marker_y/(float)m_image.height() - 0.5, 0.4);
+  matrix.scale(5, 5, 5);
+  matrix.scale(c->zm, c->zm, c->zm);
+  
+  m_program->setUniformValue(m_matrixUniform, matrix);
+
+  GLfloat marktex[18*2];
+  for (int i = 0; i < 18*2;i++)
+    marktex[i] = tex_cord[i];
+
+  glEnableVertexAttribArray(m_posAttr);
+  glVertexAttribPointer(m_posAttr, 3, GL_FLOAT, GL_FALSE, 0, marker);
+  glEnableVertexAttribArray(m_normals);
+  glVertexAttribPointer(m_normals, 3, GL_FLOAT, GL_FALSE, 0, mark_norm);
+  glEnableVertexAttribArray(m_normals);
+  glVertexAttribPointer(m_tex, 2, GL_FLOAT, GL_FALSE, 0, marktex);
+
+  glUniform1i(m_grass, 0);
+  glUniform1i(m_mtn, 1);
+  glActiveTexture(GL_TEXTURE0);
+  texture->bind();
+  glActiveTexture(GL_TEXTURE1);
+  mountain->bind();
+
+  glDrawArrays(GL_TRIANGLES, 0, 18);
+
+  glDisableVertexAttribArray(m_posAttr);
+  glDisableVertexAttribArray(m_normals);
+  glDisableVertexAttribArray(m_tex);  
+    
+  m_program->release();
+    
+}
+
+void GameWindow::explosionCrater(int id, float R, float D, float h, float S, float F)
+{
+    float n0, n1, m0, m1, w, a, b, c, d, delta;
+
+    for (int x=p[id].x*m_image.width()-R-1; x<p[id].x*m_image.width()+R+2; x++){
+        for (int y=p[id].y*m_image.height()-R-1; y<p[id].y*m_image.height()+R+2; y++){
+
+            int idPoint = (x+m_image.width()/2)*m_image.width() + (y+m_image.width()/2+1);
+
+            float r = sqrt(pow(p[idPoint].x-p[id].x,2)+pow(p[idPoint].y-p[id].y,2))*256;
+            float Rn = 2*r/R;
+
+            if (Rn <= 1-F){
+                n0 = -1;
+                m0 = 0;
+                n1 = 0;
+                m1 = S*(1-F);
+                w = Rn/(1-F);
+            } else if (Rn <= (1-F)/2){
+                n1 = h/D;
+                n0 = 0;
+                m1 = 0;
+                m0 = S*(F/2)*D/h;
+                w = (Rn-(1-F))/(F/2);
+            } else if (Rn <= 1){
+                n0 = h/D;
+                n1 = 0;
+                m0 = 0;
+                m1 = 0;
+                w = (Rn - (1-F/2))/(F/2);
+            } else {
+                n0 = 0;
+                n1 = 0;
+                m0 = 0;
+                m1 = 0;
+                w = 0;
+            }
+
+            a = m1 + m0 + 2*(n0-n1);
+            b = 3*(n1-n0)-m1-2*m0;
+            c = m0;
+            d = n0;
+
+            delta = (a*pow(w,3)+b*pow(w,2)+c*w+d)*D;
+
+            cout << delta << endl;
+
+            p[idPoint].z += delta;
+        }
+    }
 }
 
 
@@ -695,11 +822,7 @@ void GameWindow::calc_tex()
 void GameWindow::displayTriangles()
 {
  
-  
-   
   //m_program->setUniformValue(m_posAttr,cl);
-  
-  
 
   GLfloat vertices[m_image.width()*2*(m_image.height() - 1)*3];
   uint ip,id = 0;
