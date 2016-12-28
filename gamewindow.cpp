@@ -510,6 +510,9 @@ void GameWindow::keyPressEvent(QKeyEvent *event)
       if(marker_x > 0)
 	marker_x--;
       break;
+    case 'W' :
+      explosionCrater(idMarker, 20.0f, 0.05f, 0.005f, 0.4f, 0.2f);
+      break;
     case 'X':
       carte ++;
       if(carte > 3)
@@ -540,7 +543,7 @@ void GameWindow::displayExplosionMarker(int id)
   //matrix.rotate(mr_rotat, 0.0f, 0.0f);
   matrix.translate(0.0f, 0.0f, mr_hover);
 
-  matrix.translate((float)marker_x/(float)m_image.width() - 0.5, (float)marker_y/(float)m_image.height() - 0.5, 0.4);
+  matrix.translate((float)marker_y/(float)m_image.width() - 0.5, (float)marker_x/(float)m_image.height() - 0.5, 0.4);
   matrix.scale(5, 5, 5);
   matrix.scale(c->zm, c->zm, c->zm);
   
@@ -578,13 +581,15 @@ void GameWindow::explosionCrater(int id, float R, float D, float h, float S, flo
 {
     float n0, n1, m0, m1, w, a, b, c, d, delta;
 
-    for (int x=p[id].x*m_image.width()-R-1; x<p[id].x*m_image.width()+R+2; x++){
-        for (int y=p[id].y*m_image.height()-R-1; y<p[id].y*m_image.height()+R+2; y++){
+    for (int x = marker_x -R-1; x < marker_x + R+2; x++){
+        for (int y = marker_y -R-1; y< marker_y + R+2; y++){
 
-            int idPoint = (x+m_image.width()/2)*m_image.width() + (y+m_image.width()/2+1);
+	  int idPoint = y * m_image.width() + x;
+	  if(idPoint < 0)
+	    cout << "point = " <<  idPoint << endl;
 
-            float r = sqrt(pow(p[idPoint].x-p[id].x,2)+pow(p[idPoint].y-p[id].y,2))*256;
-            float Rn = 2*r/R;
+	  float r = sqrt(pow(p[idPoint].x-p[id].x,2)+pow(p[idPoint].y-p[id].y,2))*256;
+	  float Rn = 2*r/R;
 
             if (Rn <= 1-F){
                 n0 = -1;
@@ -619,7 +624,7 @@ void GameWindow::explosionCrater(int id, float R, float D, float h, float S, flo
 
             delta = (a*pow(w,3)+b*pow(w,2)+c*w+d)*D;
 
-            cout << delta << endl;
+            //cout << delta << endl;
 
             p[idPoint].z += delta;
         }
