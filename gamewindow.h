@@ -34,59 +34,64 @@ public:
 
     void keyPressEvent(QKeyEvent *event);
 
-    void displayTriangles();
-    void displayLines();
-    void displayTrianglesC();
-    void displayPoints();
-    void displayTrianglesTexture();
-
-    void displayColor(float);
-
-    void loadMap(QString localPath);
-    void updateParticlesAut();
-    void updateParticlesHiv();
+    void draw_terrain();
+    void draw_marker(int);
+ 
     paramCamera* c;
 
-    void setSeason(int );
-
+    void calc_point(QString localPath);
+    void calc_triangle();
     void calc_normals();
     void calc_tex();
     void calc_humid();
+    
+    void init_terrain_shader();
+    void init_marker_shader();
 
-    void initMarker();
-    void displayExplosionMarker(int);
+    void init_terrain();
+    void init_marker();
+
+    void init_textures();
+
+    void init_matrix();
+
+    void init_point_marker();
     void explosionCrater(int, float, float, float, float, float);
 
     GLuint loadShader(GLenum type, const char *source);
-public slots:
-    void updateSeason();
 
 private:
     int nbTick = 0;
     int m_frame = 0;
-    int season, day;
-    point* particules;
-    bool master = false;
+    
+    int maj = 20;
+
+    QTimer *timer;
+    QTimer *timerFPS;
 
     QImage m_image;
     point *p;
+
+    GLfloat* triangle_terrain;
     GLfloat* normals;
     GLfloat* tex_cord;
     GLfloat* humid;
-    int carte=1;
-    int maj = 20;
+
+    bool master;
 
     QOpenGLTexture *texture;
     QOpenGLTexture *mountain;
 
-    QTimer *timer;
-    QTimer *timerFPS;
-    
     int idMarker;
     int marker_x;
     int marker_y;
+
     GLfloat* marker;
     GLfloat* mark_norm;
+    
+    QMatrix4x4 matrix_terrain;
+    QMatrix4x4 matrix_marker;
+    
     GLfloat mr_rotat = 0;
     GLfloat mr_hover = 0;
     GLfloat hover_s = 1.0;

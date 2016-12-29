@@ -33,8 +33,8 @@ int main(int argc, char **argv)
     format.setSamples(16);
     
     paramCamera* c=new paramCamera();
-    
-    QTimer* calendar = new QTimer;
+
+    //    QTimer* calendar = new QTimer;
 
     GameWindow* window[4];
     for(int i = 0; i < 1; i++)
@@ -43,7 +43,6 @@ int main(int argc, char **argv)
             window[i] = new GameWindow();
         else
             window[i] = new GameWindow(30);
-        window[i]->setSeason(i);
         window[i]->c = c;
         window[i]->setFormat(format);
         window[i]->resize(500,375);
@@ -52,11 +51,9 @@ int main(int argc, char **argv)
                 
         window[i]->setPosition(x*500,y*450);
         window[i]->show();
-
-        calendar->connect(calendar, SIGNAL(timeout()),window[i], SLOT(updateSeason()));
     }
     
-    calendar->start(20);
+    
 
     return app.exec();
 }
