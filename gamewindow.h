@@ -35,7 +35,7 @@ public:
     void keyPressEvent(QKeyEvent *event);
 
     void draw_terrain();
-    void draw_marker(int);
+    void draw_marker();
  
     paramCamera* c;
 
@@ -54,6 +54,7 @@ public:
     void init_textures();
 
     void init_matrix();
+    void transform_matrix();
 
     void init_point_marker();
     void explosionCrater(int, float, float, float, float, float);
@@ -91,6 +92,8 @@ private:
     
     QMatrix4x4 matrix_terrain;
     QMatrix4x4 matrix_marker;
+    QMatrix4x4 tf_terrain;
+    QMatrix4x4 tf_marker;    
     
     GLfloat mr_rotat = 0;
     GLfloat mr_hover = 0;

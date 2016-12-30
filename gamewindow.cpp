@@ -148,11 +148,17 @@ void GameWindow::init_marker_shader()
 
 void GameWindow::init_terrain()
 {
+  init_matrix();
   calc_point(":/heightmap-1.png");
   calc_normals();
   calc_tex();
+  
+  triangle_terrain = new GLfloat[m_image.width()*2*(m_image.height() - 1)*3];
+  
   calc_triangle();
   calc_humid();
+  init_terrain_shader();
+  
 }
 
 void GameWindow::init_marker()
@@ -165,7 +171,7 @@ void GameWindow::init_marker()
   init_point_marker();
 }
 
-void GameWindow::initMarker()
+void GameWindow::init_point_marker()
 {
   GLfloat tmp_marker[18*3] = {0.0, 0.0, 0.0,
 			      -0.01, 0.01, 0.03,
@@ -276,9 +282,11 @@ void GameWindow::render()
   glLoadIdentity();
   
   m_frame++;
- 
+
+  transform_matrix();
   draw_terrain();
-  draw_marker(idMaker);
+  draw_marker();
+
 }
 
 bool GameWindow::event(QEvent *event)
@@ -351,10 +359,30 @@ void GameWindow::keyPressEvent(QKeyEvent *event)
       explosionCrater(idMarker, 20.0f, 0.05f, 0.005f, 0.4f, 0.2f);
       break;
     }
-
+ 
 }
 
-void GameWindow::draw_marker(int id)
+void GameWindow::transform_matrix()
+{
+  QMatrix4x4 tf;
+
+  tf.rotate(0.0f,1.0f,0.0f,0.0f);
+  tf.rotate(c->rotX,0.0f,0.0f,1.0f);
+  tf.translate(c->rotY, c->ss, 0.0f);
+  tf.scale(c->zm, c->zm, c->zm);
+
+  tf_terrain = tf;
+  
+  //tf.setToIdentity();
+
+  tf.translate(0.0f, 0.0f, mr_hover);
+  tf.translate((float)marker_y/(float)m_image.width() - 0.5, (float)marker_x/(float)m_image.height() - 0.5, 0.4);
+  tf.scale(4.0, 4.0, 4.0);
+
+  tf_marker = tf;
+}
+  
+void GameWindow::draw_marker()
 {
   mr_rotat += 0.05f;
   
@@ -368,15 +396,10 @@ void GameWindow::draw_marker(int id)
   idMarker = marker_y*m_image.width() + marker_x;
   
   m_program->bind();
-  matrix.rotate(c->rotX,1.0f,0.0f,0.0f);
-  matrix.rotate(c->anim,0.0f,0.0f,1.0f);
 
-  //matrix.rotate(mr_rotat, 0.0f, 0.0f);
-  matrix.translate(0.0f, 0.0f, mr_hover);
-
-  matrix.translate((float)marker_y/(float)m_image.width() - 0.5, (float)marker_x/(float)m_image.height() - 0.5, 0.4);
-  matrix.scale(5, 5, 5);
-  matrix.scale(c->zm, c->zm, c->zm);
+  QMatrix4x4 mat = matrix_terrain;
+  mat *= tf_marker;
+  m_program->setUniformValue(m_matrixUniform, mat);
   
   GLfloat marktex[18*2];
   for (int i = 0; i < 18*2;i++)
@@ -457,6 +480,7 @@ void GameWindow::explosionCrater(int id, float R, float D, float h, float S, flo
       p[idPoint].z += delta;
     }
   }
+  calc_triangle();
 }
 
 
@@ -599,13 +623,11 @@ void GameWindow::calc_tex()
 	    }
 	}
     }
-  cout << "done " << endl;
+  
 }
 
 void GameWindow::calc_triangle()
 {
-  triangle_terrain = new GLfloat[m_image.width()*2*(m_image.height() - 1)*3];
-  
   uint ip,id = 0;
 		   
   for(int i = 0; i < m_image.height()-1; i++)
@@ -616,28 +638,25 @@ void GameWindow::calc_triangle()
 	  ip = (j%2 == 1?i+1:i);
 	  id = ip*m_image.width() +j/2;
 	  //cout << "i = " <<  p[id].x << " ip = " << p[id].y << " j = " <<"  --- "  << "  width " << p[id+m_image.width()].x<< "  height " << p[id+m_image.height()].y << endl;
-	  vertices[3*(i*m_image.width()*2+j)] = p[id].x;
-	  vertices[3*(i*m_image.width()*2+j) + 1] = p[id].y;
-	  vertices[3*(i*m_image.width()*2+j) + 2] = p[id].z;
+	  triangle_terrain[3*(i*m_image.width()*2+j)] = p[id].x;
+	  triangle_terrain[3*(i*m_image.width()*2+j) + 1] = p[id].y;
+	  triangle_terrain[3*(i*m_image.width()*2+j) + 2] = p[id].z;
 	  //cout << "norm =   " << normals[3*(i*m_image.width()*2+j)] << endl;
 	}
     }
 }	
 
-void GameWindow::displayTriangles()
+void GameWindow::draw_terrain()
 {
   m_program->bind();
 
-  matrix.ortho(-1.0, 1.0, -1.0, 1.0, -100.0, 100.0);
-  matrix.rotate(c->rotX,1.0f,0.0f,0.0f);
-  //matrix.rotate(0.0f,0.0f,0.0f,0.0f);
-  matrix.translate(c->rotY, c->ss, 0.0f);
-  matrix.scale(c->zm, c->zm, c->zm);
-		   
-  m_program->setUniformValue(m_matrixUniform, matrix);
+  QMatrix4x4 mat = matrix_terrain;
+  mat *= tf_terrain;
+  
+  m_program->setUniformValue(m_matrixUniform, mat);
  
   glEnableVertexAttribArray(m_posAttr);
-  glVertexAttribPointer(m_posAttr, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+  glVertexAttribPointer(m_posAttr, 3, GL_FLOAT, GL_FALSE, 0, triangle_terrain);
   glEnableVertexAttribArray(m_normals);
   glVertexAttribPointer(m_normals, 3, GL_FLOAT, GL_FALSE, 0, normals);
   glEnableVertexAttribArray(m_tex);
